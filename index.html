@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Sports Match Exporter</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .control-panel {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+        .filter-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        select, input, button, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        select:focus, input:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        button.secondary {
+            background: #17a2b8;
+        }
+        button.secondary:hover {
+            background: #138496;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .match-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .match-container:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .league-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .league-logo {
+            width: 35px;
+            height: 35px;
+            margin-right: 12px;
+            object-fit: contain;
+        }
+        .teams-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 45%;
+        }
+        .team-logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 8px;
+            object-fit: contain;
+        }
+        .vs {
+            font-weight: bold;
+            font-size: 20px;
+            color: #6c757d;
+        }
+        .match-time {
+            color: #6c757d;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .stream-controls {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px dashed #dee2e6;
+        }
+        .stream-item {
+            display: grid;
+            grid-template-columns: 1fr 2fr auto;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        #json-output {
+            width: 100%;
+            height: 350px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            margin-top: 20px;
+            border-radius: 6px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .hidden {
+            display: none;
+        }
+        .country-flag {
+            width: 24px;
+            height: 18px;
+            margin-right: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .checkbox-container input {
+            width: auto;
+            margin-right: 12px;
+        }
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .search-container input {
+            padding-left: 40px;
+        }
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        .match-count {
+            margin: 15px 0;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        .proxy-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        @media (max-width: 768px) {
+            .filter-section {
+                grid-template-columns: 1fr;
+            }
+            .control-panel {
+                padding: 15px;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <div class="control-panel">
+        <h2><i class="fas fa-tv"></i> Advanced Sports Match Exporter</h2>
+        
+        <div class="filter-section">
+            <div class="form-group">
+                <label for="api-url"><i class="fas fa-link"></i> SofaScore API URL:</label>
+                <input type="text" id="api-url" value="https://www.sofascore.com/api/v1/sport/football/scheduled-events/">
+            </div>
+            
+            <div class="form-group">
+                <label for="sport-category"><i class="fas fa-list"></i> Sport Category:</label>
+                <select id="sport-category">
+                    <option value="">All Sports</option>
+                    <option value="football" selected>Football</option>
+                    <option value="basketball">Basketball</option>
+                    <option value="tennis">Tennis</option>
+                    <option value="hockey">Ice Hockey</option>
+                    <option value="baseball">Baseball</option>
+                    <option value="volleyball">Volleyball</option>
+                    <option value="rugby">Rugby</option>
+                    <option value="cricket">Cricket</option>
+                    <option value="handball">Handball</option>
+                    <option value="american-football">American Football</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="date-input"><i class="far fa-calendar-alt"></i> Date:</label>
+                <input type="date" id="date-input" value="">
+            </div>
+            
+            <div class="form-group">
+                <label for="proxy-url"><i class="fas fa-shield-alt"></i> CORS Proxy:</label>
+                <select id="proxy-url">
+                    <option value="https://cors-anywhere.herokuapp.com/">cors-anywhere.herokuapp.com</option>
+                    <option value="https://api.allorigins.win/raw?url=">api.allorigins.win</option>
+                    <option value="https://proxy.cors.sh/">proxy.cors.sh</option>
+                    <option value="https://corsproxy.io/?">corsproxy.io</option>
+                    <option value="">None (may not work)</option>
+                </select>
+                <div class="proxy-warning">
+                    <i class="fas fa-exclamation-triangle"></i> CORS proxies may be slow. For production use, set up your own proxy server.
+                </div>
+            </div>
+        </div>
+        
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" placeholder="Search matches by team or league...">
+        </div>
+        
+        <button id="fetch-btn"><i class="fas fa-sync-alt"></i> Fetch Matches</button>
+        <div class="match-count" id="match-count"></div>
+    </div>
+
+    <div id="matches-container">
+        <div class="loading">
+            <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+            <p>Enter search criteria and click "Fetch Matches"</p>
+        </div>
+    </div>
+
+    <div id="export-section" class="hidden">
+        <h3><i class="fas fa-file-export"></i> Export Options</h3>
+        <button id="export-btn" class="secondary"><i class="fas fa-code"></i> Generate JSON</button>
+        <button id="copy-btn"><i class="far fa-copy"></i> Copy to Clipboard</button>
+        <button id="download-btn"><i class="fas fa-download"></i> Download JSON</button>
+        <textarea id="json-output" readonly></textarea>
+    </div>
+
+    <script>
+        let allMatches = [];
+        let selectedMatches = [];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default date to today
+            const today = new Date();
+            const dateString = today.toISOString().split('T')[0];
+            document.getElementById('date-input').value = dateString;
+            
+            // Event listeners
+            document.getElementById('fetch-btn').addEventListener('click', fetchMatches);
+            document.getElementById('export-btn').addEventListener('click', generateJson);
+            document.getElementById('copy-btn').addEventListener('click', copyToClipboard);
+            document.getElementById('download-btn').addEventListener('click', downloadJson);
+            document.getElementById('search-input').addEventListener('input', filterMatches);
+        });
+
+        async function fetchMatches() {
+            const apiUrlBase = document.getElementById('api-url').value;
+            const sportCategory = document.getElementById('sport-category').value;
+            const date = document.getElementById('date-input').value;
+            const proxyUrl = document.getElementById('proxy-url').value;
+            
+            let apiUrl;
+            if (sportCategory) {
+                apiUrl = `https://www.sofascore.com/api/v1/sport/${sportCategory}/scheduled-events/${date}`;
+            } else {
+                apiUrl = `https://www.sofascore.com/api/v1/sport/football/scheduled-events/${date}`;
+            }
+            
+            const container = document.getElementById('matches-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+                    <p>Loading matches...</p>
+                </div>
+            `;
+            
+            try {
+                // Use proxy if selected
+                const fetchUrl = proxyUrl ? proxyUrl + encodeURIComponent(apiUrl) : apiUrl;
+                
+                const response = await fetch(fetchUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                container.innerHTML = '';
+                allMatches = [];
+                selectedMatches = [];
+                
+                if (data.events?.length > 0) {
+                    data.events.forEach(match => {
+                        const matchElement = createMatchElement(match);
+                        container.appendChild(matchElement);
+                        allMatches.push(match);
+                    });
+                    updateMatchCount();
+                } else {
+                    container.innerHTML = '<div class="loading"><i class="far fa-frown"></i><p>No matches found for this date</p></div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = `
+                    <div class="loading" style="color:#dc3545">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading matches: ${error.message}</p>
+                        <p>Try a different CORS proxy or check the console for details.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function filterMatches() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const matches = document.querySelectorAll('.match-container');
+            
+            let visibleCount = 0;
+            
+            matches.forEach(match => {
+                const homeTeam = match.querySelector('.team:nth-child(1) span').textContent.toLowerCase();
+                const awayTeam = match.querySelector('.team:nth-child(3) span').textContent.toLowerCase();
+                const leagueName = match.querySelector('.league-header span').textContent.toLowerCase();
+                
+                if (searchTerm === '' || 
+                    homeTeam.includes(searchTerm) || 
+                    awayTeam.includes(searchTerm) || 
+                    leagueName.includes(searchTerm)) {
+                    match.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    match.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('match-count').textContent = `Showing ${visibleCount} of ${matches.length} matches`;
+        }
+
+        function createMatchElement(match) {
+            const country = match.tournament?.category?.country?.name || 'International';
+            const countryCode = match.tournament?.category?.country?.alpha2?.toLowerCase() || '';
+            const leagueName = match.tournament?.name || 'Unknown League';
+            const leagueId = match.tournament?.uniqueTournament?.id;
+            const homeTeam = match.homeTeam?.name || 'Home Team';
+            const awayTeam = match.awayTeam?.name || 'Away Team';
+            const homeTeamId = match.homeTeam?.id;
+            const awayTeamId = match.awayTeam?.id;
+            
+            // Use original SofaScore time (UTC)
+            const matchTime = match.startTimestamp ? new Date(match.startTimestamp * 1000) : new Date();
+            const timeString = matchTime.toISOString().substr(11, 5);
+            const dateString = matchTime.toISOString().split('T')[0];
+            
+            const element = document.createElement('div');
+            element.className = 'match-container';
+            element.dataset.matchId = match.id;
+            
+            element.innerHTML = `
+                <div class="checkbox-container">
+                    <input type="checkbox" class="match-checkbox" data-match-id="${match.id}">
+                    <div class="league-header">
+                        <img src="http://api.sofascore.com/api/v1/unique-tournament/${leagueId}/image/dark" 
+                             class="league-logo" onerror="this.style.display='none'">
+                        <span>
+                            <img src="https://flagcdn.com/16x12/${countryCode}.png" 
+                                 class="country-flag" onerror="this.style.display='none'">
+                            ${country} | ${leagueName}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="teams-container">
+                    <div class="team">
+                        <img src="https://img.sofascore.com/api/v1/team/${homeTeamId}/image" 
+                             class="team-logo" onerror="this.src='https://via.placeholder.com/60?text=HT'">
+                        <span>${homeTeam}</span>
+                    </div>
+                    
+                    <div class="vs">VS</div>
+                    
+                    <div class="team">
+                        <img src="https://img.sofascore.com/api/v1/team/${awayTeamId}/image" 
+                             class="team-logo" onerror="this.src='https://via.placeholder.com/60?text=AT'">
+                        <span>${awayTeam}</span>
+                    </div>
+                </div>
+                
+                <div class="match-time">${dateString} at ${timeString} UTC</div>
+                
+                <div class="stream-controls" data-match-id="${match.id}" style="display:none">
+                    <h4><i class="fas fa-stream"></i> Stream Links</h4>
+                    <div class="stream-list"></div>
+                    <button class="secondary add-stream" data-match-id="${match.id}">
+                        <i class="fas fa-plus"></i> Add Stream
+                    </button>
+                </div>
+            `;
+            
+            // Add event listener for checkbox
+            const checkbox = element.querySelector('.match-checkbox');
+            checkbox.addEventListener('change', function() {
+                const streamControls = element.querySelector('.stream-controls');
+                if (this.checked) {
+                    streamControls.style.display = 'block';
+                    if (!selectedMatches.some(m => m.id === match.id)) {
+                        selectedMatches.push({
+                            ...match,
+                            streams: []
+                        });
+                    }
+                    document.getElementById('export-section').classList.remove('hidden');
+                } else {
+                    streamControls.style.display = 'none';
+                    selectedMatches = selectedMatches.filter(m => m.id !== match.id);
+                    if (selectedMatches.length === 0) {
+                        document.getElementById('export-section').classList.add('hidden');
+                    }
+                }
+            });
+            
+            // Add stream button
+            element.querySelector('.add-stream').addEventListener('click', function() {
+                const matchId = this.dataset.matchId;
+                const streamList = element.querySelector('.stream-list');
+                addStreamElement(streamList, matchId);
+                
+                // Add to selected match's streams
+                const selectedMatch = selectedMatches.find(m => m.id == matchId);
+                if (selectedMatch) {
+                    selectedMatch.streams.push({
+                        embed_name: "",
+                        embed_link: null,
+                        embed_iframe: ""
+                    });
+                }
+            });
+            
+            return element;
+        }
+
+        function addStreamElement(container, matchId) {
+            const element = document.createElement('div');
+            element.className = 'stream-item';
+            element.innerHTML = `
+                <input type="text" class="stream-name" placeholder="Channel Name">
+                <input type="text" class="stream-iframe" placeholder="Embed URL">
+                <button class="danger remove-stream"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(element);
+            
+            element.querySelector('.remove-stream').addEventListener('click', function() {
+                // Remove from selected match's streams
+                const selectedMatch = selectedMatches.find(m => m.id == matchId);
+                if (selectedMatch) {
+                    const index = Array.from(container.children).indexOf(element);
+                    if (index !== -1) {
+                        selectedMatch.streams.splice(index, 1);
+                    }
+                }
+                element.remove();
+            });
+        }
+
+        function updateMatchCount() {
+            const count = document.querySelectorAll('.match-container').length;
+            document.getElementById('match-count').textContent = `Found ${count} matches`;
+        }
+
+        function generateJson() {
+            const output = {
+                data: selectedMatches.map(match => {
+                    const matchTime = match.startTimestamp ? new Date(match.startTimestamp * 1000) : new Date();
+                    const timeString = matchTime.toISOString().substr(11, 5);
+                    const dateString = matchTime.toISOString().split('T')[0];
+                    
+                    // Get stream values from DOM
+                    const matchElement = document.querySelector(`.match-container[data-match-id="${match.id}"]`);
+                    const streams = Array.from(matchElement.querySelectorAll('.stream-item')).map((item, i) => {
+                        return {
+                            id: i + 1,
+                            attributes: {
+                                embed_name: item.querySelector('.stream-name').value,
+                                embed_link: null,
+                                embed_iframe: item.querySelector('.stream-iframe').value
+                            }
+                        };
+                    });
+                    
+                    return {
+                        id: match.id || Date.now(),
+                        attributes: {
+                            diary_hour: timeString,
+                            date_diary: dateString,
+                            league_name: match.tournament?.name || '',
+                            league_logo: `http://api.sofascore.com/api/v1/unique-tournament/${match.tournament?.uniqueTournament?.id}/image/dark`,
+                            home_team: match.homeTeam?.name || '',
+                            home_team_logo: `https://img.sofascore.com/api/v1/team/${match.homeTeam?.id}/image`,
+                            away_team: match.awayTeam?.name || '',
+                            away_team_logo: `https://img.sofascore.com/api/v1/team/${match.awayTeam?.id}/image`,
+                            country: match.tournament?.category?.country?.name || 'International',
+                            country_code: match.tournament?.category?.country?.alpha2?.toLowerCase() || '',
+                            channels: { 
+                                data: streams.map(stream => ({
+                                    id: stream.id,
+                                    attributes: {
+                                        channel_name: stream.attributes.embed_name,
+                                        channel_link: stream.attributes.embed_iframe
+                                    }
+                                }))
+                            },
+                            embeds: {
+                                data: streams
+                            }
+                        }
+                    };
+                })
+            };
+            
+            document.getElementById('json-output').value = JSON.stringify(output, null, 2);
+        }
+
+        function copyToClipboard() {
+            const output = document.getElementById('json-output');
+            output.select();
+            document.execCommand('copy');
+            
+            // Show feedback
+            const copyBtn = document.getElementById('copy-btn');
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+            }, 2000);
+        }
+
+        function downloadJson() {
+            const output = document.getElementById('json-output').value;
+            const blob = new Blob([output], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `matches-export-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
